@@ -86,6 +86,13 @@ function setup_infrastructure() {
                 --member="serviceAccount:$SA_EMAIL" \
                 --role="roles/compute.instanceAdmin.v1" >/dev/null
         fi
+        
+        # 3.3. Grant permission to act as Service Account User (required for gcloud compute ssh)
+        if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/iam.serviceAccountUser"; then
+            gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
+                --member="serviceAccount:$SA_EMAIL" \
+                --role="roles/iam.serviceAccountUser" >/dev/null
+        fi
         echo "✅ Service account created & roles assigned."
     else
         echo "✅ Service Account $SA_EMAIL already exists."
@@ -101,6 +108,12 @@ function setup_infrastructure() {
             gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
                 --member="serviceAccount:$SA_EMAIL" \
                 --role="roles/compute.instanceAdmin.v1" >/dev/null
+        fi
+        if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/iam.serviceAccountUser"; then
+            echo "   Assigning roles/iam.serviceAccountUser to existing SA..."
+            gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
+                --member="serviceAccount:$SA_EMAIL" \
+                --role="roles/iam.serviceAccountUser" >/dev/null
         fi
     fi
 
