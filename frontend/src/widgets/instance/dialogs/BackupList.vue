@@ -100,7 +100,7 @@ const openDialog = async () => {
   await loadBackups();
 };
 
-const handleDelete = (record: BackupInfo) => {
+const handleDelete = (record: any) => {
   Modal.confirm({
     title: t("TXT_CODE_backup_confirmDelete"),
     content: record.name,

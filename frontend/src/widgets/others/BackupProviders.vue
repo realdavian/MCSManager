@@ -128,7 +128,7 @@ const handleAdd = async () => {
   }
 };
 
-const handleTest = async (provider: BackupProvider) => {
+const handleTest = async (provider: any) => {
   testResults.value[provider.id] = null;
   try {
     const res = await executeTestProvider({
@@ -149,7 +149,7 @@ const handleTest = async (provider: BackupProvider) => {
   }
 };
 
-const handleDelete = (provider: BackupProvider) => {
+const handleDelete = (provider: any) => {
   Modal.confirm({
     title: t("TXT_CODE_backup_confirmDeleteProvider"),
     content: provider.name,
