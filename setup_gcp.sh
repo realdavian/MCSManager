@@ -68,11 +68,16 @@ function setup_infrastructure() {
             --display-name="GitHub Actions Deployer"
         sleep 5 # Give time for SA to propagate
 
-        # 3.1. Grant permission to write to Artifact Registry
+        # 3.1. Grant permission to write and read from Artifact Registry
         if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/artifactregistry.writer"; then
             gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
                 --member="serviceAccount:$SA_EMAIL" \
                 --role="roles/artifactregistry.writer" >/dev/null
+        fi
+        if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/artifactregistry.reader"; then
+            gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
+                --member="serviceAccount:$SA_EMAIL" \
+                --role="roles/artifactregistry.reader" >/dev/null
         fi
         
         # 3.2. Grant permission to describe and start Compute Engine instances
@@ -85,11 +90,11 @@ function setup_infrastructure() {
     else
         echo "✅ Service Account $SA_EMAIL already exists."
         # Ensure roles are assigned if SA already exists but roles might be missing
-        if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/artifactregistry.writer"; then
-            echo "   Assigning roles/artifactregistry.writer to existing SA..."
+        if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/artifactregistry.reader"; then
+            echo "   Assigning roles/artifactregistry.reader to existing SA..."
             gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
                 --member="serviceAccount:$SA_EMAIL" \
-                --role="roles/artifactregistry.writer" >/dev/null
+                --role="roles/artifactregistry.reader" >/dev/null
         fi
         if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$SA_EMAIL" | grep -q "roles/compute.instanceAdmin.v1"; then
             echo "   Assigning roles/compute.instanceAdmin.v1 to existing SA..."
