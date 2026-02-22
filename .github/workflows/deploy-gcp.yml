@@ -121,4 +121,4 @@ jobs:
           EOF
 
           # Use gcloud compute ssh to run the deployment script directly
-          gcloud compute ssh minecraft-host --zone=asia-southeast1-a --command="bash -s" < deploy_script.sh
+          gcloud compute ssh minecraft-host --zone=asia-southeast1-a --quiet --command="bash -s" < deploy_script.sh
