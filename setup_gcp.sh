@@ -22,7 +22,7 @@ fi
 
 # Configuration
 VM_NAME="minecraft-host"
-MACHINE_TYPE="e2-medium"
+MACHINE_TYPE="e2-standard-4"
 REPO_NAME="mcsmanager-repo"
 SA_NAME="github-actions-deploy"
 SA_EMAIL="${SA_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
