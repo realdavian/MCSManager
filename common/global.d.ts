@@ -49,6 +49,14 @@ declare global {
       openFrpTunnelId?: string;
       openFrpToken?: string;
     };
+    backupConfig?: {
+      enabled: boolean;
+      providerId: string;
+      selectedPaths: string[];
+      scheduledBackup: boolean;
+      scheduleInterval: number;
+      onStopBackup: boolean;
+    };
   }
 
   type ProcessType = "general" | "docker";

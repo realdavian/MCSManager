@@ -23,18 +23,23 @@ import {
   CheckCircleOutlined,
   CloseOutlined,
   CloudDownloadOutlined,
+  CloudUploadOutlined,
   CodeOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
+  FolderViewOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
   RedoOutlined,
+  SettingOutlined,
   TagsOutlined,
   UserOutlined
 } from "@ant-design/icons-vue";
 import { message, Modal } from "ant-design-vue";
 import _ from "lodash";
 import { computed, ref } from "vue";
+import BackupSettings from "./dialogs/BackupSettings.vue";
+import BackupList from "./dialogs/BackupList.vue";
 
 const props = defineProps<{
   card: LayoutCard;
@@ -69,6 +74,10 @@ const { isLoading: stopLoading, execute: executeStop } = stopInstance();
 const { isLoading: restartLoading, execute: executeRestart } = restartInstance();
 const { isLoading: killLoading, execute: executeKill } = killInstance();
 const { isLoading: updateLoading, execute: executeUpdate } = updateInstance();
+
+// Backup dialog refs
+const backupSettingsRef = ref<InstanceType<typeof BackupSettings>>();
+const backupListRef = ref<InstanceType<typeof BackupList>>();
 
 const refreshList = () => {
   setTimeout(() => {
@@ -219,6 +228,24 @@ const instanceOperations = computed(() =>
       disabled: containerState.isDesignMode
     },
     {
+      title: t("TXT_CODE_backup_settings"),
+      icon: SettingOutlined,
+      click: (event: MouseEvent) => {
+        event.stopPropagation();
+        backupSettingsRef.value?.openDialog();
+      },
+      disabled: containerState.isDesignMode
+    },
+    {
+      title: t("TXT_CODE_backup_viewBackups"),
+      icon: FolderViewOutlined,
+      click: (event: MouseEvent) => {
+        event.stopPropagation();
+        backupListRef.value?.openDialog();
+      },
+      disabled: containerState.isDesignMode
+    },
+    {
       title: t("TXT_CODE_524e3036"),
       icon: CodeOutlined,
       click: (event: MouseEvent) => {
@@ -341,6 +368,21 @@ const instanceOperations = computed(() =>
       </div>
     </template>
   </CardPanel>
+
+  <!-- Backup Dialogs -->
+  <BackupSettings
+    ref="backupSettingsRef"
+    :instance-info="instanceInfo"
+    :instance-id="instanceId"
+    :daemon-id="daemonId"
+    @update="refreshList"
+  />
+  <BackupList
+    ref="backupListRef"
+    :instance-info="instanceInfo"
+    :instance-id="instanceId"
+    :daemon-id="daemonId"
+  />
 </template>
 
 <style clang="scss" scoped>

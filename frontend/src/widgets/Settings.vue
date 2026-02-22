@@ -15,6 +15,7 @@ import {
   BankOutlined,
   BookOutlined,
   BugOutlined,
+  CloudUploadOutlined,
   EditOutlined,
   GithubOutlined,
   LockOutlined,
@@ -25,6 +26,7 @@ import {
   ProjectOutlined,
   QuestionCircleOutlined
 } from "@ant-design/icons-vue";
+import BackupProviders from "./others/BackupProviders.vue";
 import { Modal, message, notification } from "ant-design-vue";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useLayoutConfigStore } from "../stores/useLayoutConfig";
@@ -105,6 +107,11 @@ const menus = arrayFilter([
     title: t("TXT_CODE_9c3ca8f"),
     key: "security",
     icon: LockOutlined
+  },
+  {
+    title: t("TXT_CODE_backup_providers"),
+    key: "backup",
+    icon: CloudUploadOutlined
   },
   {
     title: t("TXT_CODE_46cb40d5"),
@@ -711,6 +718,15 @@ onUnmounted(() => {
 
           <template #redeem>
             <IframeBox :src="getProPanelUrl('/')" :height="card.height" />
+          </template>
+
+          <template #backup>
+            <div class="content-box" :style="{ maxHeight: card.height }">
+              <a-typography-title :level="4" class="mb-24">
+                {{ t("TXT_CODE_backup_providers") }}
+              </a-typography-title>
+              <BackupProviders :max-height="card.height" />
+            </div>
           </template>
 
           <template #about>

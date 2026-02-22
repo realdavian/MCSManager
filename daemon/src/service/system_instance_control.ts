@@ -13,7 +13,8 @@ export enum ScheduleActionTypeEnum {
   Stop = "stop",
   Start = "start",
   Restart = "restart",
-  Kill = "kill"
+  Kill = "kill",
+  Backup = "backup"
 }
 
 export const ScheduleTypeEnum = {
@@ -71,7 +72,7 @@ class IntervalJob implements IScheduleJob {
 
 // Scheduled task instance class
 class Task {
-  constructor(public config: TaskConfig, public job?: IScheduleJob) {}
+  constructor(public config: TaskConfig, public job?: IScheduleJob) { }
 }
 
 class InstanceControlSubsystem {
@@ -244,6 +245,13 @@ class InstanceControlSubsystem {
         }
         if (actionType === ScheduleActionTypeEnum.Kill) {
           await instance.execPreset("kill");
+          continue;
+        }
+        if (actionType === ScheduleActionTypeEnum.Backup) {
+          // Only backup if instance is stopped for consistency
+          if (instanceStatus === Instance.STATUS_STOP) {
+            await instance.execPreset("backup");
+          }
           continue;
         }
 

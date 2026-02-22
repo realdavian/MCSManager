@@ -36,6 +36,14 @@ class Config {
   ssl = false;
   sslPemPath = "";
   sslKeyPath = "";
+
+  // Remote backup storage providers
+  public storageProviders: Array<{
+    id: string;
+    name: string;
+    type: "s3" | "gcs";
+    config: any;
+  }> = [];
 }
 
 // daemon configuration class

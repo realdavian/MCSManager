@@ -83,4 +83,13 @@ export default class InstanceConfig implements IGlobalInstanceConfig {
     openFrpTunnelId: "",
     openFrpToken: ""
   };
+
+  public backupConfig = {
+    enabled: false,
+    providerId: "",
+    selectedPaths: [] as string[],
+    scheduledBackup: false,
+    scheduleInterval: 360, // minutes (6 hours default)
+    onStopBackup: true
+  };
 }

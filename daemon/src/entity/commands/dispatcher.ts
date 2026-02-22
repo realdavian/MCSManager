@@ -1,22 +1,24 @@
 import Instance from "../instance/instance";
 import InstanceCommand from "./base/command";
-import NullCommand from "./nullfunc";
+import DockerResizeCommand from "./docker/docker_pty_resize";
+import DockerStartCommand from "./docker/docker_start";
+import BackupCommand from "./general/backup_command";
+import GeneralSendCommand from "./general/general_command";
+import GeneralInstallCommand from "./general/general_install";
+import GeneralKillCommand from "./general/general_kill";
+import GeneralRestartCommand from "./general/general_restart";
 import GeneralStartCommand from "./general/general_start";
 import GeneralStopCommand from "./general/general_stop";
-import GeneralKillCommand from "./general/general_kill";
-import GeneralSendCommand from "./general/general_command";
-import GeneralRestartCommand from "./general/general_restart";
-import DockerStartCommand from "./docker/docker_start";
-import TimeCheck from "./task/time";
 import GeneralUpdateCommand from "./general/general_update";
+import PingJavaMinecraftServerCommand from "./minecraft/mc_ping";
+import NullCommand from "./nullfunc";
+import PtyResizeCommand from "./pty/pty_resize";
 import PtyStartCommand from "./pty/pty_start";
 import RconCommand from "./steam/rcon_command";
-import DockerResizeCommand from "./docker/docker_pty_resize";
-import PtyResizeCommand from "./pty/pty_resize";
-import GeneralInstallCommand from "./general/general_install";
-import PingJavaMinecraftServerCommand from "./minecraft/mc_ping";
-import PingMinecraftServerTask from "./task/mc_players";
+import BackupLifeCycleTask from "./task/backup_lifecycle";
 import DockerStatsTask from "./task/docker_stats";
+import PingMinecraftServerTask from "./task/mc_players";
+import TimeCheck from "./task/time";
 
 // If you add a new "Preset", Please add the definition here.
 export type IPresetCommand =
@@ -28,7 +30,8 @@ export type IPresetCommand =
   | "refreshPlayers"
   | "command"
   | "resize"
-  | "install";
+  | "install"
+  | "backup";
 
 // Instance function dispatcher
 // Dispatch and assign different functions according to different types
@@ -53,6 +56,7 @@ export default class FunctionDispatcher extends InstanceCommand {
     instance.setPreset("update", new GeneralUpdateCommand());
     instance.setPreset("refreshPlayers", new NullCommand());
     instance.setPreset("install", new GeneralInstallCommand());
+    instance.setPreset("backup", new BackupCommand());
 
     // Preset the basic operation mode according to the instance startup type
     if (!instance.config.processType || instance.config.processType === "general") {
@@ -79,5 +83,11 @@ export default class FunctionDispatcher extends InstanceCommand {
       instance.setPreset("refreshPlayers", new PingJavaMinecraftServerCommand());
       instance.lifeCycleTaskManager.registerLifeCycleTask(new PingMinecraftServerTask());
     }
+
+    // Backup lifecycle task (scheduled backups and on-stop backup)
+    if (instance.config.backupConfig?.enabled) {
+      instance.lifeCycleTaskManager.registerLifeCycleTask(new BackupLifeCycleTask());
+    }
   }
 }
+

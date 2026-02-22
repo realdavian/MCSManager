@@ -243,6 +243,23 @@ export default class Instance extends EventEmitter {
     if (cfg.terminalOption) {
       configureEntityParams(this.config.terminalOption, cfg.terminalOption, "haveColor", Boolean);
     }
+    if (cfg.backupConfig) {
+      const backupConfigChanged =
+        cfg.backupConfig.enabled !== this.config.backupConfig?.enabled ||
+        cfg.backupConfig.providerId !== this.config.backupConfig?.providerId;
+
+      configureEntityParams(this.config.backupConfig, cfg.backupConfig, "enabled", Boolean);
+      configureEntityParams(this.config.backupConfig, cfg.backupConfig, "providerId", String);
+      configureEntityParams(this.config.backupConfig, cfg.backupConfig, "selectedPaths");
+      configureEntityParams(this.config.backupConfig, cfg.backupConfig, "scheduledBackup", Boolean);
+      configureEntityParams(this.config.backupConfig, cfg.backupConfig, "scheduleInterval", Number);
+      configureEntityParams(this.config.backupConfig, cfg.backupConfig, "onStopBackup", Boolean);
+
+      // Re-initialize lifecycle tasks if backup config changed significantly
+      if (backupConfigChanged && this.isStoppedOrBusy()) {
+        this.forceExec(new FunctionDispatcher());
+      }
+    }
 
     if (persistence) {
       if (!this.config.basePort) this.allocatePort(this.config);
