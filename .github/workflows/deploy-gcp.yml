@@ -92,17 +92,17 @@ jobs:
             gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
             
             echo "Pulling latest images from Artifact Registry..."
-            docker pull $IMAGE_WEB_URL
-            docker pull $IMAGE_DAEMON_URL
+            sudo docker pull $IMAGE_WEB_URL
+            sudo docker pull $IMAGE_DAEMON_URL
             
             echo "Stopping currently running applications..."
-            docker stop mcsmanager-web || true
-            docker rm mcsmanager-web || true
-            docker stop mcsmanager-daemon || true
-            docker rm mcsmanager-daemon || true
+            sudo docker stop mcsmanager-web || true
+            sudo docker rm mcsmanager-web || true
+            sudo docker stop mcsmanager-daemon || true
+            sudo docker rm mcsmanager-daemon || true
             
             echo "Starting Web container..."
-            docker run -d \
+            sudo docker run -d \
               --name mcsmanager-web \
               --restart unless-stopped \
               -p 23333:23333 \
@@ -112,7 +112,7 @@ jobs:
               $IMAGE_WEB_URL
 
             echo "Starting Daemon container..."
-            docker run -d \
+            sudo docker run -d \
               --name mcsmanager-daemon \
               --restart unless-stopped \
               --network host \
