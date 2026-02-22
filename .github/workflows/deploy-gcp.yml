@@ -9,7 +9,8 @@ on:
 env:
   GAR_LOCATION: asia-southeast1 
   REPOSITORY: mcsmanager-repo
-  IMAGE_NAME: mcsmanager
+  IMAGE_WEB: mcsmanager-web
+  IMAGE_DAEMON: mcsmanager-daemon
 
 jobs:
   build-and-deploy:
@@ -34,12 +35,21 @@ jobs:
       - name: Configure Docker for GCP
         run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
 
-      - name: Build and push Docker image
+      - name: Build and push Web Image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: dockerfile/web.dockerfile
           push: true
-          tags: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_WEB }}:latest
+
+      - name: Build and push Daemon Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: dockerfile/daemon.dockerfile
+          push: true
+          tags: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_DAEMON }}:latest
 
       - name: Ensure VM is running
         run: |
@@ -69,23 +79,40 @@ jobs:
           key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           script: |
             # Set the image URL variable
-            IMAGE_URL=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+            IMAGE_WEB_URL=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_WEB }}:latest
+            IMAGE_DAEMON_URL=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_DAEMON }}:latest
             
-            # Authenticate docker to GAR (Optional: VM default service account might do this natively if roles are correct, but this guarantees it works)
+            # Authenticate docker to GAR 
             gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
             
-            echo "Pulling latest image from Artifact Registry..."
-            docker pull $IMAGE_URL
+            echo "Pulling latest images from Artifact Registry..."
+            docker pull $IMAGE_WEB_URL
+            docker pull $IMAGE_DAEMON_URL
             
-            echo "Stopping currently running application..."
-            docker stop mcsmanager || true
-            docker rm mcsmanager || true
+            echo "Stopping currently running applications..."
+            docker stop mcsmanager-web || true
+            docker rm mcsmanager-web || true
+            docker stop mcsmanager-daemon || true
+            docker rm mcsmanager-daemon || true
             
-            echo "Starting new container..."
+            echo "Starting Web container..."
             docker run -d \
-              --name mcsmanager \
+              --name mcsmanager-web \
               --restart unless-stopped \
               -p 23333:23333 \
-              -p 24444:24444 \
-              -v /opt/mcsmanager/data:/app/data \
-              $IMAGE_URL
+              -v /etc/localtime:/etc/localtime:ro \
+              -v /opt/mcsmanager/web/data:/opt/mcsmanager/web/data \
+              -v /opt/mcsmanager/web/logs:/opt/mcsmanager/web/logs \
+              $IMAGE_WEB_URL
+
+            echo "Starting Daemon container..."
+            docker run -d \
+              --name mcsmanager-daemon \
+              --restart unless-stopped \
+              --network host \
+              -e MCSM_DOCKER_WORKSPACE_PATH=/opt/mcsmanager/daemon/data/InstanceData \
+              -v /etc/localtime:/etc/localtime:ro \
+              -v /opt/mcsmanager/daemon/data:/opt/mcsmanager/daemon/data \
+              -v /opt/mcsmanager/daemon/logs:/opt/mcsmanager/daemon/logs \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              $IMAGE_DAEMON_URL
