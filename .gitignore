@@ -124,3 +124,7 @@ src/public/1.png
 */.idea/*
 
 .turbo
+
+
+# Artifacts
+gcp-mc-server-script

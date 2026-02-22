@@ -1,0 +1,91 @@
+name: Deploy to GCP VM
+
+on:
+  push:
+    branches:
+      - master
+      - feat/remote-storage-backup # Remove this later if you only want master deployments
+
+env:
+  GAR_LOCATION: asia-southeast1 
+  REPOSITORY: mcsmanager-repo
+  IMAGE_NAME: mcsmanager
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ secrets.GCP_WIF_PROVIDER }}'
+          service_account: '${{ secrets.GCP_SA_EMAIL }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Ensure VM is running
+        run: |
+          STATUS=$(gcloud compute instances describe minecraft-host --zone=asia-southeast1-a --format='get(status)')
+          if [ "$STATUS" != "RUNNING" ]; then
+            echo "VM is $STATUS. Starting it up..."
+            gcloud compute instances start minecraft-host --zone=asia-southeast1-a
+            echo "Waiting 15 seconds for SSH to become available..."
+            sleep 15
+          else
+            echo "VM is already running."
+          fi
+
+      - name: Get current VM IP
+        id: get-ip
+        run: |
+          IP=$(gcloud compute instances describe minecraft-host \
+            --zone=asia-southeast1-a \
+            --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+          echo "VM_IP=$IP" >> $GITHUB_ENV
+
+      - name: Deploy to GCP VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.VM_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+          script: |
+            # Set the image URL variable
+            IMAGE_URL=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Authenticate docker to GAR (Optional: VM default service account might do this natively if roles are correct, but this guarantees it works)
+            gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+            
+            echo "Pulling latest image from Artifact Registry..."
+            docker pull $IMAGE_URL
+            
+            echo "Stopping currently running application..."
+            docker stop mcsmanager || true
+            docker rm mcsmanager || true
+            
+            echo "Starting new container..."
+            docker run -d \
+              --name mcsmanager \
+              --restart unless-stopped \
+              -p 23333:23333 \
+              -p 24444:24444 \
+              -v /opt/mcsmanager/data:/app/data \
+              $IMAGE_URL
