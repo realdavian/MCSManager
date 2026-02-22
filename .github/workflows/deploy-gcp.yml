@@ -88,8 +88,8 @@ jobs:
             IMAGE_WEB_URL=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_WEB }}:latest
             IMAGE_DAEMON_URL=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_DAEMON }}:latest
             
-            # Authenticate docker to GAR 
-            gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+            # Authenticate docker to GAR for the root user
+            gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://${{ env.GAR_LOCATION }}-docker.pkg.dev
             
             echo "Pulling latest images from Artifact Registry..."
             sudo docker pull $IMAGE_WEB_URL
