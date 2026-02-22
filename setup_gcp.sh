@@ -132,6 +132,15 @@ function setup_infrastructure() {
         --role="roles/iam.workloadIdentityUser" \
         --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/${GH_REPO_NAME}" >/dev/null
 
+    # 4d. Bind Compute Engine Default Service Account to read Artifact Registry (Required for VM to pull image)
+    COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+    if ! gcloud projects get-iam-policy "$GCP_PROJECT_ID" --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:serviceAccount:$COMPUTE_SA" | grep -q "roles/artifactregistry.reader"; then
+        gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
+            --member="serviceAccount:$COMPUTE_SA" \
+            --role="roles/artifactregistry.reader" >/dev/null
+        echo "✅ Granted Artifact Registry Reader role to VM Compute Service Account."
+    fi
+
     WIF_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
     echo "$WIF_PROVIDER" > ./github-actions-wif-provider.txt
     
